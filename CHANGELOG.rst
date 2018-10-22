@@ -11,6 +11,21 @@ Unreleased
 
 Added
 -----
+- Add new motifs for 396 TFs that already had at least one motif and
+  add motifs for 12 TFs that didn't yet have a motif:
+
+  -``BATF``
+  -``BCL11A``
+  -``HES1``
+  -``HES5``
+  -``HSFY2``
+  -``MYF5``
+  -``NFYC``
+  -``PAX8``
+  -``SIX5``
+  -``TAL1``
+  -``TP73``
+  -``ZNF20``
 
 Changed
 -------
