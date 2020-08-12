@@ -7,6 +7,7 @@ import pickle
 import subprocess
 import sys
 from collections import defaultdict
+from datetime import datetime
 
 import networkx as nx
 import numpy
@@ -447,7 +448,7 @@ def find_valleys(
 def filter_subpeaks(subpeak_file, analysis_name, output_folder):
     """Takes the initial subpeaks in, stitches them."""
     # Stitch the subpeaks
-    print(subpeak_file)
+    print("filter_subpeaks %s" % subpeak_file)
     subpeak_collection = utils.import_bound_region(
         subpeak_file, "%s_subpeak" % (analysis_name)
     )
@@ -476,15 +477,25 @@ def generate_subpeak_fasta(
     canidate supers.
 
     """
+    print("generate_subpeak_fasta ...")
+
     genome_directory = genome.directory()
     subpeak_dict = {}
     subpeak_bed = [["track name=" + project_name + " color=204,0,204"]]
     subpeak_table = utils.parse_table(subpeaks, "\t")
 
     subpeak_loci = [utils.Locus(l[0], int(l[1]), int(l[2]), ".") for l in subpeak_table]
+
+    print("utils.LocusCollection ...")
     subpeak_collection = utils.LocusCollection(subpeak_loci, 50)
 
+    print("finding overlaps ...")
+    gene_count = 0
     for gene in gene_to_enhancer_dict.keys():
+        gene_count += 1
+        if gene_count % 50 == 0:
+            dn = datetime.now()
+            print(dn.strftime("%Y%m%d %H:%M:%S") + " processing gene %s, %d/%d" % (gene, gene_count, len(gene_to_enhancer_dict)))
         subpeak_dict[gene] = []
         for region in gene_to_enhancer_dict[gene]:
             overlaps = subpeak_collection.get_overlap(region)
@@ -496,15 +507,19 @@ def generate_subpeak_fasta(
             overlap_collection_temp = utils.LocusCollection(extended_overlaps, 50)
             overlap_collection = overlap_collection_temp.stitch_collection()
             for overlap in overlap_collection.get_loci():
+                if overlap.start < 0:
+                    overlap.start = 0
                 subpeak_bed.append([overlap.chr, overlap.start, overlap.end])
                 subpeak_dict[gene].append(overlap)
 
+    print("filling fasta ...")
     fasta = []
     for gene in subpeak_dict:
         for subpeak in subpeak_dict[gene]:
             fasta_title = "|".join(
                 [gene, subpeak.chr, str(subpeak.start), str(subpeak.end)]
             )
+            print(fasta_title)
             fasta_line = utils.fetch_seq(
                 genome_directory,
                 subpeak.chr,
